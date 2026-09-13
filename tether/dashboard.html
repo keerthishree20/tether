@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tether</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%232a78d6' stroke-width='2'/%3E%3Ccircle cx='8' cy='8' r='2.5' fill='%232a78d6'/%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light;
+    --page:            #f2f2f0;
+    --surface-1:       #fcfcfb;
+    --surface-2:       #ececea;
+    --line:            #dedddb;
+    --text-primary:    #0b0b0b;
+    --text-secondary:  #52514e;
+    --text-muted:      #7a7975;
+    --series-1:        #2a78d6;
+    --series-1-fill:   rgba(42, 120, 214, 0.13);
+    --grid:            rgba(11, 11, 11, 0.09);
+    --good:            #0ca30c;
+    --warning:         #fab219;
+    --serious:         #ec835a;
+    --critical:        #d03b3b;
+    --status-ink:      #0b0b0b;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page:           #131312;
+      --surface-1:      #1a1a19;
+      --surface-2:      #232322;
+      --line:           #33332f;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #8d8c83;
+      --series-1:       #3987e5;
+      --series-1-fill:  rgba(57, 135, 229, 0.18);
+      --grid:           rgba(255, 255, 255, 0.10);
+      --status-ink:     #0b0b0b;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:           #131312;
+    --surface-1:      #1a1a19;
+    --surface-2:      #232322;
+    --line:           #33332f;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #8d8c83;
+    --series-1:       #3987e5;
+    --series-1-fill:  rgba(57, 135, 229, 0.18);
+    --grid:           rgba(255, 255, 255, 0.10);
+    --status-ink:     #0b0b0b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding-block: 22px 48px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+  /* ------------------------------------------------------------- masthead */
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; }
+  .title { display: flex; flex-direction: column; gap: 2px; margin-right: auto; }
+  h1 { margin: 0; font-size: 21px; font-weight: 650; letter-spacing: -0.015em; }
+  .sub { color: var(--text-secondary); font-size: 13px; }
+
+  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  button, select {
+    font: inherit;
+    font-size: 13px;
+    color: var(--text-primary);
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 5px 11px;
+    cursor: pointer;
+  }
+  button:hover, select:hover { background: var(--surface-2); }
+  button[aria-pressed="true"] { border-color: var(--series-1); color: var(--series-1); }
+  :focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+  .conn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+  .conn[data-state="down"] .dot { background: var(--critical); }
+  .conn[data-state="down"] { color: var(--critical); }
+
+  /* ---------------------------------------------------------------- tiles */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 10px;
+  }
+  .tile {
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 13px 15px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .tile-k {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.075em;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .tile-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .tile-v {
+    font: 600 29px/1.12 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .tile-n { font-size: 12px; color: var(--text-secondary); }
+
+  .pill {
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; font-weight: 650;
+    padding: 2px 8px 2px 6px;
+    border-radius: 999px;
+    color: var(--status-ink);
+    background: var(--good);
+  }
+  .pill[data-level="warning"]  { background: var(--warning); }
+  .pill[data-level="serious"]  { background: var(--serious); }
+  .pill[data-level="critical"] { background: var(--critical); color: #fff; }
+  .pill svg { display: block; }
+
+  /* --------------------------------------------------------------- charts */
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 10px; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px 10px;
+    min-width: 0;
+  }
+  .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  h2 { margin: 0; font-size: 14px; font-weight: 650; letter-spacing: -0.005em; }
+  .card-note { font-size: 12px; color: var(--text-muted); }
+  .plot { position: relative; margin-top: 8px; }
+  .plot svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .axis { font-size: 10.5px; fill: var(--text-muted); }
+
+  .tip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 12px;
+    color: var(--text-primary);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    transform: translate(-50%, -125%);
+  }
+  .tip b { font-weight: 650; }
+  .tip small { color: var(--text-secondary); font-size: 11.5px; }
+
+  /* --------------------------------------------------------------- tables */
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .scroll { overflow-x: auto; }
+  th, td {
+    text-align: left;
+    padding: 7px 12px 7px 0;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  th {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.075em;
+    color: var(--text-muted); font-weight: 600;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.n { font-variant-numeric: tabular-nums; font-family: ui-monospace, Menlo, monospace; }
+  td.err {
+    white-space: normal;
+    color: var(--text-secondary);
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px;
+    min-width: 240px;
+  }
+  .empty { color: var(--text-muted); font-size: 13px; padding: 6px 0 2px; }
+
+  footer { color: var(--text-muted); font-size: 12px; }
+  code {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body data-palette="#2a78d6">
+<div class="wrap">
+
+  <header>
+    <div class="title">
+      <h1>Tether</h1>
+      <span class="sub">Durable job queue &middot; live queue state</span>
+    </div>
+    <div class="controls">
+      <span class="conn" id="conn" data-state="up"><span class="dot"></span><span id="conn-text">connecting</span></span>
+      <select id="interval" aria-label="Refresh interval">
+        <option value="1000" selected>1s</option>
+        <option value="2000">2s</option>
+        <option value="5000">5s</option>
+      </select>
+      <button id="pause" aria-pressed="false">Pause</button>
+      <button id="toggle-data" aria-pressed="false">Data</button>
+    </div>
+  </header>
+
+  <section class="tiles" id="tiles" aria-label="Queue state"></section>
+
+  <section class="charts">
+    <div class="card">
+      <div class="card-head">
+        <h2>Completion rate</h2>
+        <span class="card-note" id="rate-note">tasks per second</span>
+      </div>
+      <div class="plot" id="plot-rate"></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h2>Oldest waiting task</h2>
+        <span class="card-note" id="age-note">seconds</span>
+      </div>
+      <div class="plot" id="plot-age"></div>
+    </div>
+  </section>
+
+  <section class="card" hidden id="data-card">
+    <div class="card-head"><h2>Samples</h2><span class="card-note">most recent first</span></div>
+    <div class="scroll"><table id="samples">
+      <thead><tr><th>Time</th><th>Completion rate</th><th>Oldest wait</th><th>Available</th><th>In flight</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Queues</h2><span class="card-note">busiest first</span></div>
+    <div class="scroll"><table id="queues">
+      <thead><tr><th>Queue</th><th>Available</th><th>In flight</th><th>Scheduled</th><th>Done</th><th>Dead</th><th>Oldest wait</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="empty" id="queues-empty" hidden>No tasks yet. Enqueue one with <code>tether enqueue echo</code>.</div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Dead letters</h2><span class="card-note">replay with <code>tether dlq replay</code></span></div>
+    <div class="scroll"><table id="dead">
+      <thead><tr><th>Id</th><th>Queue</th><th>Kind</th><th>Attempts</th><th>Last error</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="empty" id="dead-empty" hidden>Nothing parked. Every task either completed or is still in play.</div>
+  </section>
+
+  <footer id="footer">Polling <code>/api/stats</code>. Prometheus text is at <code>/metrics</code>.</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var MAX_SAMPLES = 120;
+  var samples = [];        // {t, rate, age, available, in_flight}
+  var last = null;         // previous raw reading, for the rate delta
+  var timer = null;
+  var paused = false;
+  var intervalMs = 1000;
+
+  var el = function (id) { return document.getElementById(id); };
+
+  // ---------------------------------------------------------------- fetch
+
+  function poll() {
+    fetch("/api/stats", { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) { throw new Error("HTTP " + r.status); }
+        return r.json();
+      })
+      .then(function (data) {
+        setConnection(true, data.now);
+        record(data);
+        render(data);
+      })
+      .catch(function (err) { setConnection(false, String(err.message || err)); });
+  }
+
+  function setConnection(up, detail) {
+    var c = el("conn");
+    c.setAttribute("data-state", up ? "up" : "down");
+    el("conn-text").textContent = up ? "live" : "no response";
+    c.title = up ? "last reading " + detail : detail;
+  }
+
+  function record(data) {
+    var t = data.monotonic;
+    var totals = data.totals;
+    if (!last) { last = { t: t, done: totals.done }; return; }
+
+    // Too soon to divide by. Keep the old baseline rather than resetting it, so
+    // the next sample measures across the whole gap instead of losing the
+    // completions that happened inside it.
+    if (t - last.t < 0.25) { return; }
+
+    // Completed tasks only ever increase; a decrease means the table was
+    // cleared, so report nothing rather than a negative rate.
+    var delta = totals.done - last.done;
+    var rate = delta >= 0 ? delta / (t - last.t) : null;
+    last = { t: t, done: totals.done };
+    if (rate === null) { return; }
+    samples.push({
+      t: t,
+      clock: data.now,
+      rate: rate,
+      age: totals.oldest_available_age_s,
+      available: totals.available,
+      in_flight: totals.in_flight
+    });
+    if (samples.length > MAX_SAMPLES) { samples.shift(); }
+  }
+
+  // ---------------------------------------------------------------- tiles
+
+  function statusFor(age) {
+    if (age < 5) { return { level: "good", label: "healthy" }; }
+    if (age < 30) { return { level: "warning", label: "slow" }; }
+    return { level: "critical", label: "stalled" };
+  }
+
+  var ICONS = {
+    good: '<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4l2.2 2.2 4.8-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    warning: '<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2.2v4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="6" cy="9.2" r="1.05" fill="currentColor"/></svg>',
+    critical: '<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.2 3.2l5.6 5.6M8.8 3.2l-5.6 5.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+  };
+
+  function renderTiles(totals) {
+    var status = statusFor(totals.oldest_available_age_s);
+    var latestRate = samples.length ? samples[samples.length - 1].rate : null;
+    var tiles = [
+      { k: "Available", v: totals.available, n: "eligible to run now" },
+      { k: "In flight", v: totals.in_flight, n: "held under a lease" },
+      { k: "Scheduled", v: totals.scheduled, n: "waiting for a delay" },
+      { k: "Completed", v: totals.done, n: "acknowledged, all time" },
+      { k: "Dead letters", v: totals.dead, n: "parked for replay" },
+      {
+        k: "Oldest wait", v: fmtSeconds(totals.oldest_available_age_s),
+        pill: status, n: "healthy under 5s, stalled past 30s"
+      }
+    ];
+    el("tiles").innerHTML = tiles.map(function (t) {
+      var pill = t.pill
+        ? '<span class="pill" data-level="' + t.pill.level + '">' +
+          (ICONS[t.pill.level] || "") + t.pill.label + "</span>"
+        : "";
+      return '<div class="tile"><span class="tile-k">' + t.k + "</span>" +
+             '<div class="tile-row"><span class="tile-v">' + t.v + "</span>" + pill + "</div>" +
+             '<span class="tile-n">' + t.n + "</span></div>";
+    }).join("");
+    el("rate-note").textContent = latestRate === null
+      ? "tasks per second" : fmtRate(latestRate) + " now";
+  }
+
+  // --------------------------------------------------------------- charts
+
+  function niceMax(v) {
+    if (!(v > 0)) { return 1; }
+    var p = Math.pow(10, Math.floor(Math.log10(v)));
+    var n = v / p;
+    var s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    return s * p;
+  }
+
+  function drawLine(mount, values, opts) {
+    var W = Math.max(mount.clientWidth || 360, 260);
+    var H = 158;
+    var padL = 46, padR = 10, padT = 12, padB = 22;
+    var innerW = W - padL - padR;
+    var innerH = H - padT - padB;
+
+    if (values.length < 2) {
+      mount.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' +
+        opts.title + ', waiting for data"><text class="axis" x="' + (W / 2) +
+        '" y="' + (H / 2) + '" text-anchor="middle">collecting&hellip;</text></svg>';
+      return;
+    }
+
+    var max = niceMax(Math.max.apply(null, values.map(function (d) { return d.v; })));
+    var x = function (i) { return padL + (innerW * i) / (values.length - 1); };
+    var y = function (v) { return padT + innerH - (innerH * v) / max; };
+
+    var pts = values.map(function (d, i) { return x(i) + "," + y(d.v); });
+    var area = "M" + x(0) + "," + (padT + innerH) + " L" + pts.join(" L") +
+               " L" + x(values.length - 1) + "," + (padT + innerH) + " Z";
+
+    var ticks = [0, max / 2, max];
+    var grid = ticks.map(function (t) {
+      return '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(t) + '" y2="' + y(t) +
+             '" stroke="var(--grid)" stroke-width="1"/>' +
+             '<text class="axis" x="' + (padL - 8) + '" y="' + (y(t) + 3.5) +
+             '" text-anchor="end">' + opts.fmtAxis(t) + "</text>";
+    }).join("");
+
+    var span = Math.round(values[values.length - 1].t - values[0].t);
+    var lastPt = values[values.length - 1];
+
+    mount.innerHTML =
+      '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + opts.title + ": " +
+        opts.fmtValue(lastPt.v) + ' now, over the last ' + span + ' seconds">' +
+        grid +
+        '<path d="' + area + '" fill="var(--series-1-fill)"/>' +
+        '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--series-1)"' +
+          ' stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<circle cx="' + x(values.length - 1) + '" cy="' + y(lastPt.v) +
+          '" r="4" fill="var(--series-1)" stroke="var(--surface-1)" stroke-width="2"/>' +
+        '<text class="axis" x="' + padL + '" y="' + (H - 6) + '">' + span + 's ago</text>' +
+        '<text class="axis" x="' + (W - padR) + '" y="' + (H - 6) + '" text-anchor="end">now</text>' +
+        '<line id="' + opts.id + '-cross" x1="0" x2="0" y1="' + padT + '" y2="' + (padT + innerH) +
+          '" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>' +
+        '<rect x="' + padL + '" y="' + padT + '" width="' + innerW + '" height="' + innerH +
+          '" fill="transparent" data-hit="1"/>' +
+      "</svg>";
+
+    attachHover(mount, values, { x: x, y: y, padT: padT, innerH: innerH, W: W, opts: opts });
+  }
+
+  function attachHover(mount, values, geo) {
+    var svg = mount.querySelector("svg");
+    var hit = mount.querySelector('[data-hit="1"]');
+    var cross = mount.querySelector("#" + geo.opts.id + "-cross");
+    var tip = document.createElement("div");
+    tip.className = "tip";
+    tip.hidden = true;
+    mount.appendChild(tip);
+
+    function move(ev) {
+      var box = svg.getBoundingClientRect();
+      var scale = geo.W / box.width;
+      var px = (ev.clientX - box.left) * scale;
+      var best = 0, bestD = Infinity;
+      for (var i = 0; i < values.length; i++) {
+        var d = Math.abs(geo.x(i) - px);
+        if (d < bestD) { bestD = d; best = i; }
+      }
+      var pt = values[best];
+      cross.setAttribute("x1", geo.x(best));
+      cross.setAttribute("x2", geo.x(best));
+      cross.setAttribute("visibility", "visible");
+      tip.hidden = false;
+      tip.innerHTML = "<b>" + geo.opts.fmtValue(pt.v) + "</b><br><small>" +
+        Math.max(0, Math.round(values[values.length - 1].t - pt.t)) + "s ago</small>";
+      tip.style.left = (geo.x(best) / geo.W * 100) + "%";
+      tip.style.top = (geo.y(pt.v) / 158 * 100) + "%";
+    }
+
+    hit.addEventListener("mousemove", move);
+    hit.addEventListener("mouseleave", function () {
+      cross.setAttribute("visibility", "hidden");
+      tip.hidden = true;
+    });
+  }
+
+  // --------------------------------------------------------------- tables
+
+  function renderQueues(rows) {
+    var body = el("queues").querySelector("tbody");
+    el("queues-empty").hidden = rows.length > 0;
+    body.innerHTML = rows.map(function (q) {
+      return "<tr><td>" + esc(q.queue) + "</td>" +
+        '<td class="n">' + q.available + "</td>" +
+        '<td class="n">' + q.in_flight + "</td>" +
+        '<td class="n">' + q.scheduled + "</td>" +
+        '<td class="n">' + q.done + "</td>" +
+        '<td class="n">' + q.dead + "</td>" +
+        '<td class="n">' + fmtSeconds(q.oldest_available_age_s) + "</td></tr>";
+    }).join("");
+  }
+
+  function renderDead(rows) {
+    var body = el("dead").querySelector("tbody");
+    el("dead-empty").hidden = rows.length > 0;
+    body.innerHTML = rows.map(function (d) {
+      return '<tr><td class="n">' + d.id + "</td>" +
+        "<td>" + esc(d.queue) + "</td>" +
+        "<td>" + esc(d.kind) + "</td>" +
+        '<td class="n">' + d.attempts + "/" + d.max_attempts + "</td>" +
+        '<td class="err">' + esc(d.last_error || "") + "</td></tr>";
+    }).join("");
+  }
+
+  function renderSamples() {
+    var body = el("samples").querySelector("tbody");
+    body.innerHTML = samples.slice(-20).reverse().map(function (s) {
+      return "<tr><td>" + esc(s.clock) + "</td>" +
+        '<td class="n">' + fmtRate(s.rate) + "</td>" +
+        '<td class="n">' + fmtSeconds(s.age) + "</td>" +
+        '<td class="n">' + s.available + "</td>" +
+        '<td class="n">' + s.in_flight + "</td></tr>";
+    }).join("");
+  }
+
+  // -------------------------------------------------------------- helpers
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function fmtRate(v) {
+    if (v === null || v === undefined) { return "—"; }
+    return (v >= 100 ? Math.round(v) : v >= 10 ? v.toFixed(1) : v.toFixed(2)) + "/s";
+  }
+  function fmtSeconds(v) {
+    if (v < 1) { return v === 0 ? "0s" : v.toFixed(1) + "s"; }
+    if (v < 90) { return Math.round(v) + "s"; }
+    if (v < 5400) { return Math.round(v / 60) + "m"; }
+    return (v / 3600).toFixed(1) + "h";
+  }
+
+  // Axis labels must name the value the gridline actually sits at. One decimal
+  // would print the midpoint of a 0.5 scale as 0.3, which is a lie about where
+  // the line is.
+  function axisNumber(v) {
+    if (v >= 10) { return String(Math.round(v)); }
+    if (v >= 1) { return String(parseFloat(v.toFixed(1))); }
+    return String(parseFloat(v.toFixed(2)));
+  }
+
+  var RATE_OPTS = { id: "rate", title: "Completion rate",
+                    fmtAxis: axisNumber, fmtValue: fmtRate };
+  var AGE_OPTS  = { id: "age", title: "Oldest waiting task",
+                    fmtAxis: axisNumber, fmtValue: fmtSeconds };
+
+  function redrawCharts() {
+    drawLine(el("plot-rate"), samples.map(function (s) { return { t: s.t, v: s.rate }; }), RATE_OPTS);
+    drawLine(el("plot-age"), samples.map(function (s) { return { t: s.t, v: s.age }; }), AGE_OPTS);
+  }
+
+  function render(data) {
+    renderTiles(data.totals);
+    redrawCharts();
+    renderQueues(data.queues);
+    renderDead(data.dead);
+    if (!el("data-card").hidden) { renderSamples(); }
+  }
+
+  // ---------------------------------------------------------------- wiring
+
+  function schedule() {
+    if (timer) { clearInterval(timer); }
+    timer = setInterval(function () { if (!paused) { poll(); } }, intervalMs);
+  }
+
+  el("pause").addEventListener("click", function () {
+    paused = !paused;
+    this.setAttribute("aria-pressed", String(paused));
+    this.textContent = paused ? "Resume" : "Pause";
+  });
+
+  el("toggle-data").addEventListener("click", function () {
+    var card = el("data-card");
+    card.hidden = !card.hidden;
+    this.setAttribute("aria-pressed", String(!card.hidden));
+    if (!card.hidden) { renderSamples(); }
+  });
+
+  el("interval").addEventListener("change", function () {
+    intervalMs = parseInt(this.value, 10);
+    schedule();
+  });
+
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { if (last) { redrawCharts(); } }, 120);
+  });
+
+  poll();
+  schedule();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+name: tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tether
+          POSTGRES_PASSWORD: tether
+          POSTGRES_DB: tether
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U tether -d tether"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+
+    env:
+      TETHER_DSN: postgresql://tether:tether@localhost:5433/tether
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Migrate
+        run: python -m tether.cli migrate
+
+      # The chaos suite runs here too. A green badge that never killed a process
+      # would be worth very little on a project about surviving process death.
+      # The Postgres restart test skips automatically: the service container is
+      # not named tether-pg, so `docker restart` has nothing to target.
+      - name: Test
+        run: python -m pytest -q

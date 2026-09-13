@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tether"
+version = "1.0.0"
+description = "A durable job queue on Postgres: leases, retries, idempotency, dead letters."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["psycopg[binary]>=3.1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-timeout>=2.3"]
+
+[project.scripts]
+tether = "tether.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["tether*"]
+
+[tool.setuptools.package-data]
+tether = ["schema.sql", "dashboard.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --timeout=180"
+markers = ["chaos: breaks something real (kills processes, restarts Postgres)"]

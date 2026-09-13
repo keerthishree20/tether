@@ -1,0 +1,20 @@
+# `docker compose up -d` is the alternative to `make db`.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tether-pg
+    # Comes back after a reboot or a Docker restart, instead of silently staying down.
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tether
+      POSTGRES_PASSWORD: tether
+      POSTGRES_DB: tether
+    ports:
+      # 5433, not 5432: a host Postgres is often already using the default port,
+      # and a silent fallback to it fails with a confusing role error.
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tether -d tether"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
