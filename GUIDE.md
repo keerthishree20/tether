@@ -5,6 +5,7 @@ decision and the reason behind it, with the real code. It is self-contained: you
 any AI chat and ask questions about the project without sharing the repository.
 
 **Repository:** https://github.com/keerthishree20/tether
+**All projects:** https://github.com/keerthishree20
 
 ---
 
