@@ -1,5 +1,7 @@
 # Tether
 
+[![tests](https://github.com/keerthishree20/tether/actions/workflows/ci.yml/badge.svg)](https://github.com/keerthishree20/tether/actions/workflows/ci.yml)
+
 A durable job queue on Postgres. Tasks stay tethered to a worker only for as long
 as its lease holds, and not one moment longer.
 
